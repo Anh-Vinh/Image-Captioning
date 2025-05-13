@@ -1,5 +1,5 @@
 # Image Captioning with InceptionNet and LSTM (PyTorch)
-This repository implements an image captioning model that generates natural language descriptions from images. The architecture uses InceptionNet for feature extraction and an LSTM-based decoder for generating captions. The model design is based on a YouTube tutorial, with custom modifications in the dataset pipeline and training loop to suit specific training needs.
+This repository implements an image captioning model that generates natural language descriptions from images. The architecture uses InceptionNet for feature extraction and an LSTM-based decoder for generating captions. The model design is based on a YouTube tutorial, with custom modifications in the dataset pipeline and training loop to suit specific training needs. https://www.kaggle.com/code/anhvinh/image-captioning
 
 # Model Architecture
 - Encoder: InceptionNet (pretrained on ImageNet, final layer removed)
