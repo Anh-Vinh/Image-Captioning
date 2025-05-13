@@ -31,9 +31,10 @@ Some common issues observed:
 - Incorrect subject gender in human-related captions
 - Limited ability to describe interactions or detailed context
 - Repetitive or generic captions in some cases
-![plot](https://github.com/user-attachments/assets/d3cb4e2b-8c76-4a06-acf2-729f3be1a822)
-![plot (1)](https://github.com/user-attachments/assets/9a1e004d-97b4-4e5c-b845-591e479fc4a7)
-![plot (2)](https://github.com/user-attachments/assets/bb47b4c9-1faf-4260-bbc9-076f45404f4f)
+- ![plot](https://github.com/user-attachments/assets/85687dad-3765-4143-8ef6-05afe5e4f32d)
+- ![plot (1)](https://github.com/user-attachments/assets/7741cbcd-8205-4468-be28-52247d12a107)
+- ![plot (2)](https://github.com/user-attachments/assets/c1de8e1e-2184-429e-beaa-20a976fd5874)
+
 
 # References:
 - Tutorial video: https://www.youtube.com/watch?v=y2BaTt1fxJU
