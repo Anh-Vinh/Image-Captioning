@@ -8,8 +8,7 @@ This repository implements an image captioning model that generates natural lang
 - Optimizer: Adam
 
 # Data
-The Flickr8k dataset from Kaggle contains 8,000 images with 5 captions per image.
-Data Split: The dataset is split using an 8:1:1 ratio:
+The Flickr8k dataset from Kaggle contains 8,000 images with 5 captions per image. The dataset is split using an 8:1:1 ratio:
 - Training set: 6,400 images
 - Validation set: 800 images
 - Test set: 800 images
