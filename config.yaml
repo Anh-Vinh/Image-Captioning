@@ -1,0 +1,44 @@
+data:
+  frequent_threshold: 5
+  img_dir: "./dataset/images/"
+  captions_file: "./dataset/results.csv"
+
+  transform:
+    train:
+      - name: Resize
+        size: [224, 224]
+      - name: ConvertImageDtype
+        dtype: float32
+      - name: Normalize
+        mean: [0.485, 0.456, 0.406]
+        std:  [0.229, 0.224, 0.225]
+
+model:
+  backbone: resnet18
+  pretrained: True
+  embed_dim: 512
+  hidden_dim: 512
+  encoder_dim: 512
+  dropout: 0.1
+
+training:
+  save_dir: "./checkpoints/"
+  seed: 42
+  epochs: 10
+  batch_size: 16
+  num_workers: 0
+  shuffle: True
+  pin_memory: False
+  teacher_forcing_ratio: 0.5
+  beam_size: 5
+  max_len: 20
+  
+  optimizer:
+    name: adamw
+    lr: 0.001
+    weight_decay: 0.01
+  
+  scheduler:
+    name: cosine_warmup
+    warmup_epochs: 5
+    min_lr: 1e-6

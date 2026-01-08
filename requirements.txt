@@ -1,0 +1,9 @@
+nltk
+spacy
+torch
+pyyaml
+pandas
+matplotlib
+torchvision
+scikit-learn
+pycocoevalcap
