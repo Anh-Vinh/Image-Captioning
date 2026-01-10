@@ -108,7 +108,7 @@ def override(cfg, args):
 
 def main():
     # 1. Set up config
-    DATA_CONFIG_DIR = ".\config.yaml"
+    DATA_CONFIG_DIR = "./config.yaml"
     config = utils.load_config(DATA_CONFIG_DIR)
     
     args = get_args()
