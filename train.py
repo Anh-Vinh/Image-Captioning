@@ -134,7 +134,7 @@ def main():
     
     if device is not None:
         if torch.cuda.is_available():
-            device = torch(device)
+            device = torch.device(device)
         else:
             device = torch.device("cpu")
     print(f"Running on {device}")
