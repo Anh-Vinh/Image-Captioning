@@ -2,7 +2,7 @@ import os
 import spacy
 import torch
 
-from torchvision.io import decode_image
+from torchvision.io import read_image
 from torch.utils.data import Dataset
 
 
@@ -63,7 +63,7 @@ class Flickr30kDataset(Dataset):
     
     def __getitem__(self, idx):
         image_path = os.path.join(self.image_dir, self.captions.iloc[idx, self.col_idx[0]])
-        image = decode_image(image_path)
+        image = read_image(image_path)
         image_id = self.captions.iloc[idx, self.col_idx[0]]
         raw_caption = self.captions.iloc[idx, self.col_idx[1]]
 
