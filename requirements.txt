@@ -1,9 +1,9 @@
+pandas
+matplotlib
 nltk==3.9.2
 spacy==3.8.11
-torch==2.9.1
+torch==2.1.2
 pyyaml==6.0.3
-pandas==2.3.3
-matplotlib==3.10.8
-torchvision==0.24.1
+torchvision==0.16.2
 scikit-learn==1.8.0
 pycocoevalcap==1.2
