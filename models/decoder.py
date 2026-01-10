@@ -31,7 +31,7 @@ class LSTMDecoder(nn.Module):
         
         batch_size, seq_len = captions.shape
         vocab_size = self.fc.out_features
-        outputs = torch.zeros(batch_size, seq_len, vocab_size)
+        outputs = torch.zeros(batch_size, seq_len, vocab_size, device=features.device)
         
         current_word = captions[:, 0]
         h0 = self.init_h(features).unsqueeze(0) # (1, B, hidden_dim)
