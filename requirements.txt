@@ -2,8 +2,8 @@ pandas
 matplotlib
 nltk==3.9.2
 spacy==3.8.11
-torch==2.1.2
+torch==2.7.1
 pyyaml==6.0.3
-torchvision==0.16.2
+torchvision==0.22.1
 scikit-learn==1.8.0
 pycocoevalcap==1.2
