@@ -1,10 +1,12 @@
 import utils
 import torch
+import random
 import argparse
 import pandas as pd
 import torch.nn as nn
 
 from tqdm import tqdm
+from pathlib import Path
 from datetime import datetime
 from dataset import Vocabulary
 from models.encoder import CNNEncoder
@@ -54,6 +56,19 @@ def get_args():
         default=0.001,
     )
     
+    # Resume
+    parser.add_argument(
+        "--resume",
+        type=bool,
+        default=False,
+    )
+    
+    # Checkpoint
+    parser.add_argument(
+        "--ckpt",
+        type=str,
+    )
+    
     # Teacher forcing ratio
     parser.add_argument(
         "--teacher_forcing_ratio",
@@ -66,7 +81,7 @@ def get_args():
         "--beam_size",
         type=int,
         default=5,
-    )
+    )    
     
     # Max len
     parser.add_argument(
@@ -148,8 +163,9 @@ def main():
     
     TRAIN_RATIO = 0.8
     VAL_RATIO = 0.1
+    TEST_RATIO = 0.1
     
-    train_df, val_df, test_df = utils.split_image_by_id(df, TRAIN_RATIO, VAL_RATIO)
+    train_df, val_df, test_df = utils.split_image_by_id(df, TRAIN_RATIO, VAL_RATIO, TEST_RATIO)
     
     train_loader = utils.get_loader(img_dir, train_df, config["data"]["transform"]["train"],
                                     vocabulary, batch_size, num_workers, shuffle, pin_memory)
@@ -181,8 +197,15 @@ def main():
     best_val_loss = float("inf")
     train_losses = []
     val_losses = []
+    start_epoch = 1
     
-    for epoch in range(1, epochs+1):
+    # Load old model if resume training
+    if args.resume:
+        ckpt_path = Path("checkpoints/") / args.ckpt
+        start_epoch = utils.load_checkpoint(ckpt_path, model, optimizer, scheduler) + 1
+        print(f"Continue training from {ckpt_path} at {start_epoch} epoch")
+    
+    for epoch in range(start_epoch, epochs+1):
         
         train_loss = train_epoch(model, train_loader, device, criterion, optimizer)
         train_losses.append(train_loss)
@@ -203,7 +226,7 @@ def main():
             is_best = False
         
         # Save the latest checkpoint
-        utils.save_checkpoint(save_dir, epoch, model, optimizer, date_time=date_time)
+        latest_ckpt = utils.save_checkpoint(save_dir, epoch, model, optimizer, date_time=date_time)
         
     utils.plot_loss(train_losses, val_losses, date_time)
         
@@ -213,6 +236,10 @@ def main():
     print(f"Testing result:")
     print(f"BLEU Score {bleu_score}")
     print(f"CIDEr Score {cider_score}")
+    print(f"Checkpoint saved at {latest_ckpt}")
+    
+    inference(model, test_loader, device)
+    
     
 def train_epoch(model, data_loader, device, criterion=None, optimizer=None):
     total_loss = 0
@@ -275,7 +302,29 @@ def test_epoch(model, test_loader, reference_captions, device):
                 
     return bleu_score, cider_score
         
-        
+ 
+def inference(model, test_loader, device, test_num=5):
+    tested = 0
+    model.eval()
+    
+    with torch.no_grad():
+        for images, _, _ in test_loader:
+            images = images.to(device)
+            
+            idx = random.randint(0, images.size(0) - 1)
+            image = images[idx].unsqueeze(0)
+            
+            generated_caption = model.generate(image)
+            generated_caption = ' '.join(generated_caption)
+            
+            utils.plot_image_with_caption(image, generated_caption)
+            
+            tested += 1
+            
+            if tested > test_num:
+                break
+    
+       
 if __name__ == "__main__":
     main()
     
