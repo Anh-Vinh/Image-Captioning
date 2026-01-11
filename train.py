@@ -144,6 +144,9 @@ def main():
     num_workers = config["training"]["num_workers"]
     shuffle = config["training"]["shuffle"]
     pin_memory = config["training"]["pin_memory"]
+    teacher_forcing_ratio = config["training"]["teacher_forcing_ratio"]
+    beam_size = config["training"]["beam_size"]
+    max_len = config["training"]["max_len"]
     
     device = config["device"]
     
@@ -161,9 +164,9 @@ def main():
     vocabulary.build_vocabulary(df[' comment'].tolist())
     vocab_size = len(vocabulary)
     
-    TRAIN_RATIO = 0.8
-    VAL_RATIO = 0.1
-    TEST_RATIO = 0.1
+    TRAIN_RATIO = config["training"]["train_ratio"]
+    VAL_RATIO = config["training"]["val_ratio"]
+    TEST_RATIO = config["training"]["test_ratio"]
     
     train_df, val_df, test_df = utils.split_image_by_id(df, TRAIN_RATIO, VAL_RATIO, TEST_RATIO)
     
@@ -207,10 +210,10 @@ def main():
     
     for epoch in range(start_epoch, epochs+1):
         
-        train_loss = train_epoch(model, train_loader, device, criterion, optimizer)
+        train_loss = train_epoch(model, train_loader, device, teacher_forcing_ratio, criterion, optimizer)
         train_losses.append(train_loss)
         
-        val_loss = train_epoch(model, val_loader, device, criterion)
+        val_loss = train_epoch(model, val_loader, device, teacher_forcing_ratio, criterion)
         val_losses.append(val_loss)
         
         print(f"Epoch [{epoch}/{epochs}]: Training Loss {train_loss}, Validate Loss {val_loss}")
@@ -231,7 +234,7 @@ def main():
     utils.plot_loss(train_losses, val_losses, date_time)
         
     reference_captions = utils.get_reference_captions(test_df)
-    bleu_score, cider_score = test_epoch(model, test_loader, reference_captions, device)
+    bleu_score, cider_score = test_epoch(model, test_loader, reference_captions, max_len, beam_size, device)
     
     print(f"Testing result:")
     print(f"BLEU Score {bleu_score}")
@@ -241,7 +244,7 @@ def main():
     inference(model, test_loader, device)
     
     
-def train_epoch(model, data_loader, device, criterion=None, optimizer=None):
+def train_epoch(model, data_loader, device, teacher_forcing_ratio=0.5, criterion=None, optimizer=None):
     total_loss = 0
 
     # Train if optimizer is provided
@@ -252,7 +255,7 @@ def train_epoch(model, data_loader, device, criterion=None, optimizer=None):
             imgs = imgs.to(device)
             captions = captions.to(device)       
             
-            outputs = model(imgs, captions[:, :-1])
+            outputs = model(imgs, captions[:, :-1], teacher_forcing_ratio)
             
             loss = criterion(outputs.reshape(-1, outputs.size(2)), captions[:,1:].reshape(-1))
             
@@ -271,7 +274,7 @@ def train_epoch(model, data_loader, device, criterion=None, optimizer=None):
                 imgs = imgs.to(device)
                 captions = captions.to(device)       
                 
-                outputs = model(imgs, captions[:, :-1])
+                outputs = model(imgs, captions[:, :-1], teacher_forcing_ratio)
                 
                 loss = criterion(outputs.reshape(-1, outputs.size(2)), captions[:,1:].reshape(-1))
                 
@@ -280,7 +283,7 @@ def train_epoch(model, data_loader, device, criterion=None, optimizer=None):
     return total_loss/len(data_loader)
 
 
-def test_epoch(model, test_loader, reference_captions, device):
+def test_epoch(model, test_loader, reference_captions, max_len, beam_size, device):
     generated_captions = {}
     
     model.eval()
@@ -288,7 +291,7 @@ def test_epoch(model, test_loader, reference_captions, device):
         for images, _, image_ids in tqdm(test_loader):
             images = images.to(device)
             
-            generated_caption = model.generate(images)
+            generated_caption = model.generate(images, max_len=max_len, beam_size=beam_size)
             
             for idx, image_id in enumerate(image_ids):
                     
