@@ -139,7 +139,7 @@ def main():
     hidden_dim = config["model"]["hidden_dim"]
     encoder_dim = config["model"]["encoder_dim"]
     
-    save_dir = config["training"]["save_dir"]
+    save_dir = Path(config["training"]["save_dir"])
     epochs = config["training"]["epochs"]
     batch_size = config["training"]["batch_size"]
     num_workers = config["training"]["num_workers"]
@@ -205,7 +205,7 @@ def main():
     
     # Load old model if resume training
     if args.resume:
-        ckpt_path = Path("checkpoints/") / args.ckpt
+        ckpt_path = save_dir / args.ckpt
         start_epoch = utils.load_checkpoint(ckpt_path, model, optimizer, scheduler) + 1
         print(f"Continue training from {ckpt_path} at {start_epoch} epoch")
     
@@ -240,7 +240,11 @@ def main():
     print(f"Testing result:")
     print(f"BLEU Score {bleu_score}")
     print(f"CIDEr Score {cider_score}")
-    print(f"Checkpoint saved at {latest_ckpt}")
+    
+    try:
+        print(f"Checkpoint saved at {latest_ckpt}")
+    except:
+        print(f"No checkpoint was saved in this training session")
     
     inference(model, test_loader, device)
     
