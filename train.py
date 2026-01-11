@@ -1,3 +1,4 @@
+import os
 import utils
 import torch
 import random
@@ -306,21 +307,25 @@ def test_epoch(model, test_loader, reference_captions, max_len, beam_size, devic
     return bleu_score, cider_score
         
  
-def inference(model, test_loader, device, test_num=5):
+def inference(model, test_loader, device, test_num=5, save_fig=True):
     tested = 0
     model.eval()
+        
+    if save_fig:
+        os.makedirs("./sample_result/", exist_ok=True)
     
     with torch.no_grad():
-        for images, _, _ in test_loader:
+        for images, _, image_name in test_loader:
             images = images.to(device)
             
             idx = random.randint(0, images.size(0) - 1)
             image = images[idx].unsqueeze(0)
+            img_id = image_name[idx].split(".")[0]
             
             generated_caption = model.generate(image)
             generated_caption = ' '.join(generated_caption)
             
-            utils.plot_image_with_caption(image, generated_caption)
+            utils.plot_image_with_caption(image, generated_caption, img_id)
             
             tested += 1
             

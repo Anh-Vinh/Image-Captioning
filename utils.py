@@ -234,9 +234,9 @@ def denormalize(img, mean, std):
 def plot_image_with_caption(
     img,
     caption,
+    fig_name,
     mean=[0.485, 0.456, 0.406],
     std=[0.229, 0.224, 0.225],
-    save_fig=False
 ):
     """Helper function to visualize the image along with its caption.
 
@@ -264,14 +264,11 @@ def plot_image_with_caption(
     ax.text(0.5, -0.1, caption, ha='center', va='top', fontsize=10, wrap=True, transform=plt.gca().transAxes)
     plt.tight_layout()
     
-    try:
-        from IPython.display import display
-        display(fig)
-    except ImportError:
-        pass
-    
-    plt.close(fig)
+    if fig_name:
+        plt.savefig("./sample_result/" + fig_name + ".png")
+
     plt.show()
+    plt.close(fig)
 
 
 def plot_loss(train_losses, val_losses, time_date, output_dir="graphs"):
