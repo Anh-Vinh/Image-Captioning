@@ -48,7 +48,7 @@ def load_config(path: str):
         return yaml.safe_load(f)
     
 
-def split_image_by_id(caption_df, train_ratio, val_ratio, seed=42):
+def split_image_by_id(caption_df, train_ratio, val_ratio, test_ratio, seed=42):
     """A helper function that split images into train/val/test using images' ids instead by of row number to prevent data leakage
 
     Args:
@@ -66,19 +66,37 @@ def split_image_by_id(caption_df, train_ratio, val_ratio, seed=42):
     rng = np.random.default_rng(seed)
     rng.shuffle(image_ids)
     
+    train_ratio = 0.8 if not train_ratio else train_ratio
+    val_ratio = 0.1 if not val_ratio else val_ratio
+    
     total_image = len(image_ids)
     train_num = int(total_image * train_ratio)
     val_num = int(total_image * val_ratio)
     
     train_ids = image_ids[:train_num]
     val_ids = image_ids[train_num:train_num + val_num]
-    test_ids = image_ids[train_num + val_num:]
     
     train_df = caption_df[caption_df["image_name"].isin(train_ids)].reset_index(drop=True)
     val_df = caption_df[caption_df["image_name"].isin(val_ids)].reset_index(drop=True)
-    test_df = caption_df[caption_df["image_name"].isin(test_ids)].reset_index(drop=True)
     
-    return train_df, val_df, test_df
+    split_log = f"Train (Ratio={train_ratio} | Num={train_num}); Val (Ratio={val_ratio} | Num={val_num})"
+    
+    # Create a test_df if test_ratio provided
+    if test_ratio:    
+        
+        test_num = int(total_image * test_ratio)
+        test_ids = image_ids[train_num + val_num:train_num + val_num + test_num]
+        test_df = caption_df[caption_df["image_name"].isin(test_ids)].reset_index(drop=True)
+    
+        split_log += f"; Test (Ratio={test_ratio} | Num={test_num})"
+
+        print(split_log)
+
+        return train_df, val_df, test_df
+    
+    print(split_log)
+    
+    return train_df, val_df
 
 
 def build_transforms(transform_cfg):
@@ -212,6 +230,7 @@ def denormalize(img, mean, std):
     std = torch.tensor(std, device=img.device).view(-1, 1, 1)
     return img * std + mean
 
+
 def plot_image_with_caption(
     img,
     caption,
@@ -230,6 +249,10 @@ def plot_image_with_caption(
     if torch.is_tensor(img):
         img = img.detach().cpu()
         img = denormalize(img, mean, std)
+        
+        if img.ndim == 4:
+            img = img.squeeze(0)
+        
         if img.ndim == 3:
             img = img.permute(1, 2, 0)
 
@@ -240,6 +263,7 @@ def plot_image_with_caption(
     ax.text(0.5, -0.1, caption, ha='center', va='top', fontsize=10, wrap=True, transform=plt.gca().transAxes)
     plt.tight_layout()
     plt.show()
+
 
 def plot_loss(train_losses, val_losses, time_date, output_dir="graphs"):
     os.makedirs(output_dir, exist_ok=True)
@@ -258,8 +282,10 @@ def plot_loss(train_losses, val_losses, time_date, output_dir="graphs"):
     plt.savefig(os.path.join(output_dir, f"{time_date}_loss.png"), bbox_inches="tight")
     plt.close()
     
+    
 def save_cap_length_plot():
     pass
+
 
 def save_checkpoint(
     save_dir,
@@ -267,8 +293,6 @@ def save_checkpoint(
     model,
     optimizer,
     scheduler=None,
-    loss=None,
-    config=None,
     date_time=None,
     is_best=False,
 ):
@@ -286,13 +310,38 @@ def save_checkpoint(
         "epoch": epoch,
         "model_state_dict": model.state_dict(),
         "optimizer_state_dict": optimizer.state_dict(),
-        "loss": loss,
     }
 
     if scheduler is not None:
         checkpoint["scheduler_state_dict"] = scheduler.state_dict()
 
-    if config is not None:
-        checkpoint["config"] = config
-
     torch.save(checkpoint, save_dir / filename)
+    
+    return save_dir / filename
+
+
+def load_checkpoint(
+    ckpt_path,
+    model,
+    optimizer,
+    scheduler=None,
+    device="cpu",
+):
+    ckpt_path = Path(ckpt_path)
+    
+    if not ckpt_path.exists():
+        raise FileNotFoundError(f"Checkpoint not found: {ckpt_path}")
+    
+    checkpoint = torch.load(ckpt_path, map_location=device)
+    
+    model.load_state_dict(checkpoint["model_state_dict"])
+    
+    if optimizer and "optimizer_state_dict" in checkpoint:
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        
+    if scheduler and "scheduler_state_dict" in checkpoint:
+        scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+        
+    epoch = checkpoint.get("epoch", 0)
+    
+    return epoch
