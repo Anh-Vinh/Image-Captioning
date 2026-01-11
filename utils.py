@@ -235,7 +235,8 @@ def plot_image_with_caption(
     img,
     caption,
     mean=[0.485, 0.456, 0.406],
-    std=[0.229, 0.224, 0.225]
+    std=[0.229, 0.224, 0.225],
+    save_fig=False
 ):
     """Helper function to visualize the image along with its caption.
 
@@ -256,12 +257,20 @@ def plot_image_with_caption(
         if img.ndim == 3:
             img = img.permute(1, 2, 0)
 
-    _, ax = plt.subplots()
+    fig, ax = plt.subplots()
 
     ax.imshow(img)
     ax.set_axis_off()
     ax.text(0.5, -0.1, caption, ha='center', va='top', fontsize=10, wrap=True, transform=plt.gca().transAxes)
     plt.tight_layout()
+    
+    try:
+        from IPython.display import display
+        display(fig)
+    except ImportError:
+        pass
+    
+    plt.close(fig)
     plt.show()
 
 
