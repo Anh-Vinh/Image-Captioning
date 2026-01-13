@@ -1,3 +1,4 @@
+import random
 import torch
 import torch.nn as nn
 
@@ -16,7 +17,7 @@ class LSTMDecoder(nn.Module):
         
         self.embed = nn.Embedding(vocab_size, embed_dim)
         self.lstm = nn.LSTM(
-            input_size=embed_dim,
+            input_size=embed_dim + encoder_dim,
             hidden_size=hidden_dim,
             num_layers=num_layers,
             batch_first=True
@@ -24,45 +25,55 @@ class LSTMDecoder(nn.Module):
         self.fc = nn.Linear(hidden_dim, vocab_size)
         self.dropout = nn.Dropout(dropout)
         
+        self.attention = nn.MultiheadAttention(
+                            embed_dim=hidden_dim,
+                            num_heads=8,
+                            batch_first=True
+                        )
         self.init_h = nn.Linear(encoder_dim, hidden_dim)
         self.init_c = nn.Linear(encoder_dim, hidden_dim)
         
-    def forward(self, features, captions, teacher_forcing_ratio):
-        
-        batch_size, seq_len = captions.shape
+    def forward(self, encoder_out, captions, teacher_forcing_ratio=0.5):
+        """
+        encoder_out: (B, num_pixels, encoder_dim)
+        captions: (B, seq_len)
+        """
+        device = encoder_out.device
+        batch_size, seq_len = captions.size()
         vocab_size = self.fc.out_features
-        outputs = torch.zeros(batch_size, seq_len, vocab_size, device=features.device)
-        
+
+        outputs = torch.zeros(batch_size, seq_len, vocab_size, device=device)
+
+        # Initial LSTM state
+        mean_encoder_out = encoder_out.mean(dim=1)
+        h = self.init_h(mean_encoder_out).unsqueeze(0).repeat(self.lstm.num_layers, 1, 1)
+        c = self.init_c(mean_encoder_out).unsqueeze(0).repeat(self.lstm.num_layers, 1, 1)
+        hidden = (h, c)
+
         current_word = captions[:, 0]
-        h0 = self.init_h(features).unsqueeze(0) # (1, B, hidden_dim)
-        c0 = self.init_c(features).unsqueeze(0) # (1, B, hidden_dim)
-        hidden = (h0, c0)
         
         for t in range(1, seq_len):
-            embeddings = self.embed(current_word)
-            embeddings = self.dropout(embeddings)
-            embeddings = embeddings.unsqueeze(1)
+            embeddings = self.dropout(self.embed(current_word))
             
-            output, hidden = self.lstm(embeddings, hidden)
+            query = hidden[0][-1].unsqueeze(1)
+            
+            context, _ = self.attention(
+                query=query,
+                key=encoder_out,
+                value=encoder_out
+            )
+            
+            context = context.squeeze(1)
+            
+            lstm_input = torch.cat([embeddings, context], dim=1)
+            lstm_input = lstm_input.unsqueeze(1)
+            
+            output, hidden = self.lstm(lstm_input, hidden)
+            
             logits = self.fc(output.squeeze(1))
-            
             outputs[:, t] = logits
             
-            use_teacher = torch.rand(1).item() < teacher_forcing_ratio
+            use_teacher = random.random() < teacher_forcing_ratio
             current_word = captions[:, t] if use_teacher else logits.argmax(dim=1)
-            
+
         return outputs
-            
-        
-    # def forward(self, features, captions):
-    #     embeddings = self.embed(captions) # (B, T, embed_dim)
-    #     embeddings = self.dropout(embeddings)
-        
-    #     h0 = self.init_h(features).unsqueeze(0) # (1, B, hidden_dim)
-    #     c0 = self.init_c(features).unsqueeze(0) # (1, B, hidden_dim)
-        
-    #     outputs, _ = self.lstm(embeddings, (h0, c0))
-    #     outputs = self.fc(outputs) # (B, T, vocab_size)
-        
-    #     return outputs
-    
