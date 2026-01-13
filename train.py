@@ -235,11 +235,12 @@ def main():
     utils.plot_loss(train_losses, val_losses, date_time)
         
     reference_captions = utils.get_reference_captions(test_df)
-    bleu_score, cider_score = test_epoch(model, test_loader, reference_captions, max_len, beam_size, device)
+    bleu_1_score, bleu_4_score, cider_score = test_epoch(model, test_loader, reference_captions, max_len, beam_size, device)
     
     print(f"Testing result:")
-    print(f"BLEU Score {bleu_score}")
-    print(f"CIDEr Score {cider_score}")
+    print(f"BLEU-1 Score: {bleu_1_score}")
+    print(f"BLEU-4 Score: {bleu_4_score}")
+    print(f"CIDEr Score: {cider_score}")
     
     try:
         print(f"Checkpoint saved at {latest_ckpt}")
@@ -303,12 +304,13 @@ def test_epoch(model, test_loader, reference_captions, max_len, beam_size, devic
                 generated_captions[image_id] = generated_caption[idx]
                 
     # BLEU Score
-    bleu_score = utils.get_bleu_score(reference_captions, generated_captions)
+    bleu_1_score = utils.get_bleu_score(reference_captions, generated_captions, weights=(1.0, 0, 0, 0))
+    bleu_4_score = utils.get_bleu_score(reference_captions, generated_captions)
     
     # CIDEr Score
     cider_score = utils.get_cider_score(reference_captions, generated_captions)
                 
-    return bleu_score, cider_score
+    return bleu_1_score, bleu_4_score, cider_score
         
  
 def inference(model, test_loader, device, test_num=5, save_fig=True):
