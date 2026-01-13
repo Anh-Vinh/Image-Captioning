@@ -29,22 +29,24 @@ class CNNEncoder(nn.Module):
 
     def forward(self, x):
         features = self.backbone(x)
-
-        # Handle models that output spatial maps
-        if features.ndim == 4:
-            features = features.mean(dim=[2, 3])  # GAP
-
+        features = features.permute(0, 2, 3, 1)
+        features = features.reshape(features.size(0), -1, features.size(3))
         return self.proj(features)
 
     def _build_backbone(self, name, pretrained):
         weights = "IMAGENET1K_V1" if pretrained else None
 
-        if name == "resnet18" or name == "resnet50":
-            model = models.resnet18(weights=weights if pretrained else None)
-            in_features = model.fc.in_features
-            model.fc = nn.Identity()
+        if name == "resnet18":
+            model = models.resnet18(weights=weights)
+            in_features = 512
+
+        elif name == "resnet50":
+            model = models.resnet50(weights=weights)
+            in_features = 2048
 
         else:
             raise ValueError(f"Unsupported backbone: {name}")
 
-        return model, in_features
+        backbone = nn.Sequential(*list(model.children())[:-2])
+
+        return backbone, in_features
