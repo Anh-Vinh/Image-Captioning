@@ -23,7 +23,7 @@ The Flickr30k dataset from Kaggle contains 30,000 images with 5 captions per ima
 - Training loss: 3.2
 - Validating loss: 3.4
 - Testing BLEU score: 0.5855965237660847
-The model is still relatively weak overall. It can identify the main subject in images, especially more visually distinct objects like dogs, and generate diverse captions. However, it struggles with complex scenes, likely due to the simplicity of sentence structures in the Flickr8k dataset.
+The model is still relatively weak overall. It can identify the main subject in images, especially more visually distinct objects like dogs, and generate diverse captions. However, it struggles with complex scenes, likely due to the simplicity of sentence structures in the Flickr30k dataset.
 Some common issues observed:
 - Incorrect subject gender in human-related captions
 - Limited ability to describe interactions or detailed context
